@@ -1,3 +1,4 @@
+import '/shared_customization/data/basic_types.dart';
 import '../../services/api_models/api_page_response/api_page_response.dart';
 import '../../services/api_models/paging/paging.dart';
 import '/shared_customization/extensions/list_ext.dart';
@@ -48,42 +49,53 @@ extension ApiPageResponseExt<T> on ApiPageResponse<T>? {
   /// Insert one or list
   ///
   ApiPageResponse<T> insertPage(ApiPageResponse<T> newList,
-      {bool Function(T element)? removeDuplicate}) {
+      {IdentifyCallBack<T>? identify}) {
     if (newList.paging?.currentPage == 1) return newList;
     return ApiPageResponse<T>(
       status: this?.status,
       error: this?.error,
       message: this?.message,
-      data: <T>[...(this?.data ?? []), ...(newList.data ?? [])]
-          .where((element) => !(removeDuplicate?.call(element) ?? false))
-          .toList(),
+      data: <T>[
+        if (identify != null)
+          ...<String, T>{
+            for (T element in [...(this?.data ?? []), ...(newList.data ?? [])])
+              identify(element): element
+          }.values.toList()
+        else ...[...(this?.data ?? []), ...(newList.data ?? [])]
+      ],
       paging: newList.paging,
     );
   }
 
   ApiPageResponse<T> insertFirst(T data,
-          {bool Function(T element)? removeDuplicate}) =>
+          {bool Function(T element)? removeIfDuplicate}) =>
       ApiPageResponse<T>(
         status: this?.status,
         error: this?.error,
         message: this?.message,
-        data: <T>[data, ...(this?.data ?? [])]
-            .where((element) => !(removeDuplicate?.call(element) ?? false))
-            .toList(),
+        data: <T>[
+          data,
+          ...(this?.data ?? [])
+              .where((element) => !(removeIfDuplicate?.call(element) ?? false))
+              .toList()
+        ],
         paging: (this?.paging ??
                 const Paging(currentPage: 1, totalCount: 0, totalPages: 1))
             .copyWith(totalCount: (this?.paging?.totalCount ?? 0) + 1),
       );
 
   ApiPageResponse<T> insertLast(T data,
-          {bool Function(T element)? removeDuplicate}) =>
+          {bool Function(T element)? removeIfDuplicate}) =>
       ApiPageResponse<T>(
         status: this?.status,
         error: this?.error,
         message: this?.message,
-        data: <T>[...(this?.data ?? []), data]
-            .where((element) => !(removeDuplicate?.call(element) ?? false))
-            .toList(),
+        data: <T>[
+          ...(this?.data ?? [])
+              .where((element) => !(removeIfDuplicate?.call(element) ?? false))
+              .toList(),
+          data
+        ],
         paging: (this?.paging ??
                 const Paging(currentPage: 1, totalCount: 0, totalPages: 1))
             .copyWith(totalCount: (this?.paging?.totalCount ?? 0) + 1),
